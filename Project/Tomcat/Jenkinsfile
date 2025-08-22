@@ -43,7 +43,6 @@ pipeline{
              steps {
                   sh '''
                      mvn install
-					 rm -rf target/*
                      mv target/*.war target/webapp.war
                   '''
              }
