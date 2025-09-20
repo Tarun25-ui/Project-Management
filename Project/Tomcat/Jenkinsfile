@@ -43,7 +43,7 @@ pipeline{
              steps {
                   sh '''
                      mvn install
-					 rm -rf target/webapp.war
+					 rm -rf target/*
                      mv target/*.war target/webapp.war
                   '''
              }
@@ -54,7 +54,7 @@ pipeline{
              }
              steps {
                 echo 'Running Static Code Analysis'
-                 withSonarQubeEnv('SONAR_SCANNER') {
+                 withSonarQubeEnv('SONAR_HOME') {
                  sh '${scannerHome}/bin/sonar-scanner'
                  }
             }
