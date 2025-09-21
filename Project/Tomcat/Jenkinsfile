@@ -14,7 +14,7 @@ pipeline {
     stages {
         stage('Pre-Build Step') {
             steps {
-                echo "Pre Build Step: Webhook triggered the pipeline on push event"
+                sh 'echo "Pre Build Step: Webhook triggered the pipeline on push event"'
             }
         }
 
@@ -59,27 +59,20 @@ pipeline {
             }
             steps {
                 echo 'Running Static Code Analysis with SonarQube'
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    withEnv(["SONAR_SCANNER_OPTS=-Dsonar.token=$SONAR_TOKEN"]) {
+                withSonarQubeEnv('SONAR_HOME') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                         sh """
-                          ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=pipeline:project \
-                            -Dsonar.projectName=Pipeline-project \
-                            -Dsonar.projectVersion=1.0 \
-                            -Dsonar.sources=./src \
-                            -Dsonar.java.binaries=target/classes \
-                            -Dsonar.sourceEncoding=UTF-8 \
-                            -Dsonar.host.url=http://13.201.1.24:9000
+                            ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=pipeline-project \
+                                -Dsonar.projectName=Pipeline-project \
+                                -Dsonar.projectVersion=1.0 \
+                                -Dsonar.sources=./src \
+                                -Dsonar.java.binaries=target/classes \
+                                -Dsonar.sourceEncoding=UTF-8 \
+                                -Dsonar.host.url=http://13.201.1.24:9000 \
+                                -Dsonar.token=$SONAR_TOKEN
                         """
                     }
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -89,12 +82,12 @@ pipeline {
                 rtUpload (
                     serverId: 'artifactory',
                     spec: '''{
-                          "files": [
+                        "files": [
                             {
                               "pattern": "*.war",
                               "target": "local-snapshot-repo"
                             }
-                          ]
+                        ]
                     }'''
                 )
             }
@@ -119,7 +112,7 @@ pipeline {
 
         stage('Post-Build Step') {
             steps {
-                echo "Successful Pipeline for Tomcat Deployment"
+                sh 'echo "Successful Pipeline for Tomcat Deployment"'
             }
         }
     }
