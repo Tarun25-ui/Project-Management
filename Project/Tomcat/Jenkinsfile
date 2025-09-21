@@ -65,7 +65,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
                         sh """
                           ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=pipeline-project \
+                            -Dsonar.projectKey=pipeline:project \
                             -Dsonar.projectName=Pipeline-project \
                             -Dsonar.projectVersion=1.0 \
                             -Dsonar.sources=./src \
