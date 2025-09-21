@@ -8,6 +8,7 @@ pipeline{
     tools {
          maven 'MAVEN_HOME'
          jdk 'JAVA_HOME'
+         git 'GIT_HOME'
     }
 
     stages{
@@ -20,7 +21,7 @@ pipeline{
 	}
         stage('Git Checkout'){
             steps{
-                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github access', url: 'https://github.com/GoudSagar/Hello-World-Code.git']]])
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github access', url: 'https://github.com/devopscloudtrainer25/Project-Management.git']]])
             }
         }
         stage('build'){
@@ -38,7 +39,15 @@ pipeline{
                 '''
              }
          }
-  
+        stage ('Update Local Repository') {
+             steps {
+                  sh '''
+                     mvn install
+		     rm -rf target/webapp.war
+                     mv target/*.war target/webapp.war
+                  '''
+             }
+        }
         stage ('Static Code Analysis') {
              environment {
              scannerHome = tool 'SONAR_SCANNER'
@@ -58,7 +67,7 @@ pipeline{
                       "files": [
                         {
                           "pattern": "*.war",
-                           "target": "local-snapshots"
+                           "target": "local-snapshot-repo"
                         }
                     ]
                 }'''
@@ -68,7 +77,7 @@ pipeline{
         stage ('Tomcat Deployment') {
            steps {
              script {
-                 deploy adapters: [tomcat7(credentialsId: 'tomcat-credentials', path: '', url: 'http://43.205.127.124:8080')], contextPath: '/webapp', onFailure: false, war: 'webapp/target/webapp.war' 
+                 deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://43.205.127.124:8080')], contextPath: '/webapp-app', onFailure: false, war: 'target/webapp.war' 
                     }
                   }
            }
