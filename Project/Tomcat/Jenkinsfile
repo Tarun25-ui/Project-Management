@@ -14,9 +14,7 @@ pipeline {
     stages {
         stage('Pre-Build Step') {
             steps {
-                sh '''
                 echo "Pre Build Step: Webhook triggered the pipeline on push event"
-                '''
             }
         }
 
@@ -62,8 +60,8 @@ pipeline {
             steps {
                 echo 'Running Static Code Analysis with SonarQube'
                 withSonarQubeEnv('SONAR_HOME') {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
-                        sh """
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh script: """
                           ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=pipeline-project \
                             -Dsonar.projectName=Pipeline-project \
@@ -71,9 +69,18 @@ pipeline {
                             -Dsonar.sources=./src \
                             -Dsonar.java.binaries=target/classes \
                             -Dsonar.sourceEncoding=UTF-8 \
-                            -Dsonar.login=$SONAR_AUTH_TOKEN
-                        """
+                            -Dsonar.host.url=$SONAR_HOST_URL \
+                            -Dsonar.token=$SONAR_TOKEN
+                        """, returnStdout: false
                     }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -113,7 +120,7 @@ pipeline {
 
         stage('Post-Build Step') {
             steps {
-                sh 'echo "Successful Pipeline for Tomcat Deployment"'
+                echo "Successful Pipeline for Tomcat Deployment"
             }
         }
     }
