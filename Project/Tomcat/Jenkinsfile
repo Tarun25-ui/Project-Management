@@ -59,9 +59,9 @@ pipeline {
             }
             steps {
                 echo 'Running Static Code Analysis with SonarQube'
-                withSonarQubeEnv('SONAR_HOME') {
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                        sh script: """
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    withEnv(["SONAR_SCANNER_OPTS=-Dsonar.token=$SONAR_TOKEN"]) {
+                        sh """
                           ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=pipeline-project \
                             -Dsonar.projectName=Pipeline-project \
@@ -69,9 +69,8 @@ pipeline {
                             -Dsonar.sources=./src \
                             -Dsonar.java.binaries=target/classes \
                             -Dsonar.sourceEncoding=UTF-8 \
-                            -Dsonar.host.url=$SONAR_HOST_URL \
-                            -Dsonar.token=$SONAR_TOKEN
-                        """, returnStdout: false
+                            -Dsonar.host.url=http://13.201.1.24:9000
+                        """
                     }
                 }
             }
