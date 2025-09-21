@@ -1,93 +1,120 @@
-pipeline{
+pipeline {
     agent {
-      node {
-	label 'slave_1'
+        node {
+            label 'slave_1'
+        }
     }
-}
 
     tools {
-         maven 'MAVEN_HOME'
-         jdk 'JAVA_HOME'
-         git 'GIT_HOME'
+        maven 'MAVEN_HOME'
+        jdk 'JAVA_HOME'
+        git 'GIT_HOME'
     }
 
-    stages{
-        stage('pre-build step') {
+    stages {
+        stage('Pre-Build Step') {
             steps {
-		sh '''
-                echo "Pre Build Step for Webhook Trigges the pipeline on push event"
-		'''
-	    }
-	}
-        stage('Git Checkout'){
-            steps{
-                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github access', url: 'https://github.com/devopscloudtrainer25/Project-Management.git']]])
-            }
-        }
-        stage('build'){
-            steps{
-               sh '''
-                mvn package
-                '''
-            }
-        }
-        stage ('Unit Test') {
-	        steps {
-                echo 'Running Unit Testing'
                 sh '''
-                mvn test
+                echo "Pre Build Step: Webhook triggered the pipeline on push event"
                 '''
-             }
-         }
-        stage ('Update Local Repository') {
-             steps {
-                  sh '''
-                     mvn install
-					 rm -rf target/webapp.war
-                     mv target/*.war target/webapp.war
-                  '''
-             }
-        }
-        stage ('Static Code Analysis') {
-             environment {
-             scannerHome = tool 'SONAR_SCANNER'
-             }
-             steps {
-                echo 'Running Static Code Analysis'
-                 withSonarQubeEnv('SONAR_HOME') {
-                 sh '${scannerHome}/bin/sonar-scanner'
-                 }
             }
         }
-	stage('Jfrog Artifact Upload') {
+
+        stage('Git Checkout') {
             steps {
-              rtUpload (
-                serverId: 'artifactory',
-                spec: '''{
-                      "files": [
-                        {
-                          "pattern": "*.war",
-                           "target": "local-snapshot-repo"
-                        }
-                    ]
-                }'''
-              )
-          }
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/master']],
+                    userRemoteConfigs: [[
+                        credentialsId: 'github access',
+                        url: 'https://github.com/devopscloudtrainer25/Project-Management.git'
+                    ]]
+                ])
+            }
         }
-        stage ('Tomcat Deployment') {
-           steps {
-             script {
-                 deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://13.201.1.24:8080')], contextPath: '/ecommerce', onFailure: false, war: 'target/webapp.war' 
-                    }
-                  }
-           }
-         stage('post-build step') {
+
+        stage('Build') {
             steps {
-		sh '''
-                echo "Successfull Pipeline for Tomcat Deployment"
-		'''
-	    }
-	}
-    
-     }
+                sh 'mvn package'
+            }
+        }
+
+        stage('Unit Test') {
+            steps {
+                echo 'Running Unit Tests'
+                sh 'mvn test'
+            }
+        }
+
+        stage('Update Local Repository') {
+            steps {
+                sh '''
+                   mvn install
+                   rm -rf target/webapp.war
+                   mv target/*.war target/webapp.war
+                '''
+            }
+        }
+
+        stage('Static Code Analysis') {
+            environment {
+                scannerHome = tool 'SONAR_SCANNER'
+            }
+            steps {
+                echo 'Running Static Code Analysis with SonarQube'
+                withSonarQubeEnv('SONAR_HOME') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
+                        sh """
+                          ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=pipeline-project \
+                            -Dsonar.projectName=Pipeline-project \
+                            -Dsonar.projectVersion=1.0 \
+                            -Dsonar.sources=./src \
+                            -Dsonar.java.binaries=target/classes \
+                            -Dsonar.sourceEncoding=UTF-8 \
+                            -Dsonar.login=$SONAR_AUTH_TOKEN
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Jfrog Artifact Upload') {
+            steps {
+                rtUpload (
+                    serverId: 'artifactory',
+                    spec: '''{
+                          "files": [
+                            {
+                              "pattern": "*.war",
+                              "target": "local-snapshot-repo"
+                            }
+                          ]
+                    }'''
+                )
+            }
+        }
+
+        stage('Tomcat Deployment') {
+            steps {
+                script {
+                    deploy adapters: [
+                        tomcat9(
+                            credentialsId: 'tomcat-credentials',
+                            path: '',
+                            url: 'http://13.201.1.24:8080'
+                        )
+                    ],
+                    contextPath: '/ecommerce',
+                    onFailure: false,
+                    war: 'target/webapp.war'
+                }
+            }
+        }
+
+        stage('Post-Build Step') {
+            steps {
+                sh 'echo "Successful Pipeline for Tomcat Deployment"'
+            }
+        }
+    }
 }
