@@ -63,7 +63,7 @@ pipeline {
                     withEnv(["SONAR_SCANNER_OPTS=-Dsonar.token=$SONAR_TOKEN"]) {
                         sh """
                           ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=pipeline-project \
+                            -Dsonar.projectKey=pipeline:project \
                             -Dsonar.projectName=Pipeline-project \
                             -Dsonar.projectVersion=1.0 \
                             -Dsonar.sources=./src \
