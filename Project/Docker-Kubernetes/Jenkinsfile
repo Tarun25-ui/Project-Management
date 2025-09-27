@@ -23,15 +23,16 @@ pipeline{
                 checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github access', url: 'https://github.com/devopscloudtrainer25/Project-Management.git']]])
             }
         }
-        stage('build'){
-            steps{
-               sh '''
-                mvn package
-                mv target/*.war target/webapp.war
-		cp -r ${WORKSPACE}/target/webapp.war ${WORKSPACE}/Project/Docker-Kubernetes/
-                '''
-            }
-        }
+       stage('Build') {
+    steps {
+        sh '''
+            mvn clean package -DskipTests
+            WAR_FILE=$(ls target/*.war | head -n 1)
+            mv "$WAR_FILE" target/webapp.war
+            cp target/webapp.war ${WORKSPACE}/Project/Docker-Kubernetes/
+        '''
+    }
+}
         stage ('Unit Test') {
 	        steps {
                 echo 'Running Unit Testing'
