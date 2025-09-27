@@ -48,6 +48,8 @@ pipeline{
                   '''
              }
          }
+
+         /*   ---- COMMENTED SONARQUBE STAGE ----
          stage ('Static Code Analysis') {
              environment {
              scannerHome = tool 'SONAR_SCANNER'
@@ -59,6 +61,8 @@ pipeline{
                  }
             }
         }
+         -------------------------------------- */
+
         stage('Jfrog Artifact Upload') {
             steps {
               rtUpload (
