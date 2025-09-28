@@ -25,9 +25,9 @@ pipeline{
         stage('build') {
             steps{
                sh '''
-                mvn package
+                mvn clean package
                 mv target/*.war target/webapp.war
-		        cp -r ${WORKSPACE}/target/webapp.war /var/lib/jenkins/webapp.war
+		        cp -f ${WORKSPACE}/target/webapp.war /var/lib/jenkins/webapp.war
                 '''
             }
         }
